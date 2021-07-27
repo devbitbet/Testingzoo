@@ -237,12 +237,11 @@ contract ZooMedia is Media, Ownable {
 
         if (uint256(TokenType.HYBRID_EGG) == uint256(eggType)) {
             // data.tokenURI = drop.tokenURI(hatchedAnimal);
-            // data.metadataURI = drop.metaDataURI(hatchedAnimal);
+            // data.metadataURI = drop.metadataURI(hatchedAnimal);
         }
 
-
         data.tokenURI = drop.tokenURI(hatchedAnimal);
-        data.metadataURI = drop.metaDataURI(hatchedAnimal);
+        data.metadataURI = drop.metadataURI(hatchedAnimal);
         data.contentHash = keccak256(
             abi.encodePacked(
                 drop.tokenURI(hatchedAnimal),
@@ -252,7 +251,7 @@ contract ZooMedia is Media, Ownable {
         );
         data.metadataHash = keccak256(
             abi.encodePacked(
-                drop.metaDataURI(hatchedAnimal),
+                drop.metadataURI(hatchedAnimal),
                 block.number,
                 msg.sender
             )
@@ -370,16 +369,16 @@ contract ZooMedia is Media, Ownable {
         if (bytes(hybrids[_tokenID].name).length > 0) {
             // calculate daily yield
             percentage = hybrids[_tokenID].yield;
-            dailyYield = age.mul(percentage);
+            dailyYield = age.mul(percentage) + percentage;
             // transfer yield
-            token.transferFrom(address(this), msg.sender, dailyYield);
+            token.transfer(msg.sender, dailyYield);
             delete hybrids[_tokenID];
         } else {
             // calculate daily yield
             percentage = animals[_tokenID].yield;
-            dailyYield = age.mul(percentage);
+            dailyYield = age.mul(percentage) + percentage;
             // transfer yield
-            token.transferFrom(address(this), msg.sender, dailyYield);
+            token.transfer(msg.sender, dailyYield);
             delete animals[_tokenID];
         }
 
@@ -473,7 +472,7 @@ contract ZooMedia is Media, Ownable {
         string memory _rarityName,
         uint256 _rarity,
         string memory _tokenURI,
-        string memory _metaDataURI
+        string memory _metadataURI
     ) public onlyOwner {
         ZooDrop drop = ZooDrop(drops[dropID]);
         drop.addAnimal(
@@ -482,7 +481,7 @@ contract ZooMedia is Media, Ownable {
             _rarityName,
             _rarity,
             _tokenURI,
-            _metaDataURI
+            _metadataURI
         );
     }
 
@@ -496,7 +495,7 @@ contract ZooMedia is Media, Ownable {
         string memory _secondary,
         uint256 yield,
         string memory _tokenURI,
-        string memory _metaDataURI
+        string memory _metadataURI
     ) public onlyOwner {
         ZooDrop drop = ZooDrop(drops[dropID]);
         drop.addHybrid(
@@ -505,7 +504,7 @@ contract ZooMedia is Media, Ownable {
             _secondary,
             yield,
             _tokenURI,
-            _metaDataURI
+            _metadataURI
         );
     }
 

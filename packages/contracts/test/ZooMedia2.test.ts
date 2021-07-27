@@ -373,7 +373,7 @@ describe("Test ZooMedia (2)", () => {
 
     async function breedHybrid(){
 
-        await zooToken.approve(zooMedia.address, 1000)
+        await zooToken.approve(zooMedia.address, 2000)
 
         const buyFirstEgg = await zooMedia.connect(owner).buyEgg(1);
         const buyFirstEggReceipt = await buyFirstEgg.wait();
@@ -898,10 +898,6 @@ describe("Test ZooMedia (2)", () => {
             expect(err).to.exist
 
         }
-
-
-
-
     });
 
 
@@ -947,10 +943,12 @@ describe("Test ZooMedia (2)", () => {
             }
         });
 
-        // TODO increase block number
+        const prevBalance = await zooToken.balanceOf(owner.address);
+
+        // TODO increase block number and test yield
         // await ethers.provider.send("evm_setNextBlockTimestamp", [9617249934]);
 
-        const freed = await zooMedia.freeAnimal(1, 1);
+        const freed = await zooMedia.freeAnimal(1);
 
         const freedReceipt = await freed.wait();
 
@@ -972,10 +970,13 @@ describe("Test ZooMedia (2)", () => {
 
         expect(from_add).to.equal(owner.address);
         expect(token_id.toNumber()).to.equal(1);
-        expect(_yield.toNumber()).to.equal(0);
+        expect(_yield.toNumber()).to.greaterThan(0);
 
         const newAnimal = await zooMedia.animals(token_id.toNumber());
         expect(newAnimal.name).to.equal('');
+
+        const newBalance = await zooToken.balanceOf(owner.address);
+        expect(newBalance.toNumber()).to.greaterThan(prevBalance.toNumber());
     });
 
     it("Should free a hybrid animal", async () => {
@@ -1002,10 +1003,12 @@ describe("Test ZooMedia (2)", () => {
             }
         });
 
-        // TODO increase block number
+        const prevBalance = await zooToken.balanceOf(owner.address);
+
+        // TODO increase block number and test yield
         // await ethers.provider.send("evm_setNextBlockTimestamp", [9617249934]);
 
-        const freed = await zooMedia.freeAnimal(1, 5);
+        const freed = await zooMedia.freeAnimal(5);
 
         const freedReceipt = await freed.wait();
 
@@ -1027,9 +1030,12 @@ describe("Test ZooMedia (2)", () => {
 
         expect(from_add).to.equal(owner.address);
         expect(token_id.toNumber()).to.equal(5);
-        expect(_yield.toNumber()).to.equal(0);
+        expect(_yield.toNumber()).to.greaterThan(0);
 
         const newAnimal = await zooMedia.animals(token_id.toNumber());
         expect(newAnimal.name).to.equal('');
+
+        const newBalance = await zooToken.balanceOf(owner.address);
+        expect(newBalance.toNumber()).to.greaterThan(prevBalance.toNumber());
     });
 })
