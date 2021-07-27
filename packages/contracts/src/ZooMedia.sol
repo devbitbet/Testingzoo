@@ -291,7 +291,7 @@ contract ZooMedia is Media, Ownable {
     ) public onlyExistingToken(_tokenIDA) returns (uint256) {
         require(_tokenIDA != _tokenIDB);
         uint256 delay = getBreedingDelay(); 
-        require(block.number-lastTimeBred[msg.sender] > delay, "Must wait for cooldown to finish.");        
+        require(block.timestamp-lastTimeBred[msg.sender] > delay, "Must wait for cooldown to finish.");        
 
         ZooDrop drop = ZooDrop(drops[dropId]);
 
@@ -337,7 +337,7 @@ contract ZooMedia is Media, Ownable {
         eggs[eggTokenID] = hybridEgg;
 
         types[eggTokenID] = TokenType.HYBRID_EGG;
-        lastTimeBred[msg.sender] = block.number;
+        lastTimeBred[msg.sender] = block.timestamp;
         breedCount[msg.sender]++;
 
         emit Breed(msg.sender, _tokenIDA, _tokenIDB, eggTokenID);
@@ -513,19 +513,28 @@ contract ZooMedia is Media, Ownable {
         uint256 count = breedCount[msg.sender];
         uint256 avgBlocksDaily = 28800;
         uint256 delay;
-        if (count >= 5) {
-            delay = 30 * avgBlocksDaily;    
-        } else if (count == 4) {
-            delay = 7 * avgBlocksDaily;
-        } else if (count == 3) {
-            delay = 3 * avgBlocksDaily;
-        } else if (count == 3) {
-            delay = avgBlocksDaily;
-        } else if (count == 1) {
-            delay = avgBlocksDaily / 6;
-        } else {
+
+        if (count == 0) {
             delay = 0;
+        } else if (count >= 5) {
+            delay = coolDowns[coolDowns.length-1];
+        } else {
+            delay = coolDowns[count+1];
         }
+
+        // if (count == 1) {
+        //     delay = coolDowns30 * avgBlocksDaily;    
+        // } else if (count == 4) {
+        //     delay = 7 * avgBlocksDaily;
+        // } else if (count == 3) {
+        //     delay = 3 * avgBlocksDaily;
+        // } else if (count == 3) {
+        //     delay = avgBlocksDaily;
+        // } else if (count == 1) {
+        //     delay = avgBlocksDaily / 6;
+        // } else {
+        //     delay = 0;
+        // }
         return delay;
 
     }
