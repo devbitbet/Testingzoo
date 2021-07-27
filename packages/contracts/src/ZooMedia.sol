@@ -53,6 +53,9 @@ contract ZooMedia is Media, Ownable {
         uint256 eggCreationTime;
     }
 
+    // Mapping of breed count for each address
+    mapping(address => uint256) public breedCount;
+
     // Mapping of token ID to NFT type
     mapping(uint256 => TokenType) public types;
 
@@ -73,6 +76,8 @@ contract ZooMedia is Media, Ownable {
 
     // mapping of all hatched animals DOB (as blocknumbers)
     mapping(uint256 => uint256) public animalDOB;
+
+    mapping(address => uint256) public lastTimeBred;
 
     //Token address of the ZooToken
     ZooToken public token;
@@ -285,6 +290,9 @@ contract ZooMedia is Media, Ownable {
         uint256 _tokenIDB
     ) public onlyExistingToken(_tokenIDA) returns (uint256) {
         require(_tokenIDA != _tokenIDB);
+        uint256 delay = getBreedingDelay(); 
+        require(block.number-lastTimeBred[msg.sender] > delay, "Must wait for cooldown to finish.");        
+
         ZooDrop drop = ZooDrop(drops[dropId]);
 
         // require non hybrids
@@ -329,6 +337,8 @@ contract ZooMedia is Media, Ownable {
         eggs[eggTokenID] = hybridEgg;
 
         types[eggTokenID] = TokenType.HYBRID_EGG;
+        lastTimeBred[msg.sender] = block.number;
+        breedCount[msg.sender]++;
 
         emit Breed(msg.sender, _tokenIDA, _tokenIDB, eggTokenID);
 
@@ -499,23 +509,24 @@ contract ZooMedia is Media, Ownable {
         );
     }
 
-    // function checkBreedDelay() public returns (uint256) {
-    //     uint256 count = _breedCount[msg.sender];
-    //     uint256 delay;
-    //     if (count >= 5) {
-    //         delay=coolDowns[coolDowns.length-1];
-    //     } else if (count == 4) {
-    //         delay=coolDowns[coolDowns.length-2];
-    //     } else if (count == 3) {
-    //         delay=coolDowns[coolDowns.length-3];
-    //     } else if (count == 3) {
-    //         delay=coolDowns[coolDowns.length-4];
-    //     } else if (count == 1) {
-    //         delay=coolDowns[coolDowns.length-5];
-    //     } else {
-    //         delay = 0;
-    //     }
-    //     return delay;
+    function getBreedingDelay() public returns (uint256) {
+        uint256 count = breedCount[msg.sender];
+        uint256 avgBlocksDaily = 28800;
+        uint256 delay;
+        if (count >= 5) {
+            delay = 30 * avgBlocksDaily;    
+        } else if (count == 4) {
+            delay = 7 * avgBlocksDaily;
+        } else if (count == 3) {
+            delay = 3 * avgBlocksDaily;
+        } else if (count == 3) {
+            delay = avgBlocksDaily;
+        } else if (count == 1) {
+            delay = avgBlocksDaily / 6;
+        } else {
+            delay = 0;
+        }
+        return delay;
 
-    // }
+    }
 }
