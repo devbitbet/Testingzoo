@@ -507,7 +507,7 @@ const MyZooAccount: React.FC = () => {
                                     <TextWrapper
                                        style={{
                                           textShadow: "0px 2px 6px rgb(0, 0, 0)",
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           letterSpacing: 0,
                                           position: "absolute",
                                           textTransform: "lowercase",
