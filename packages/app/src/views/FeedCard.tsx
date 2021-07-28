@@ -13,6 +13,7 @@ import { RarityColor } from "enums/rarity-color";
 interface Props {
   item: Animal;
   url?: string;
+  animalGroup?: object;
 }
 
 const FirstThird = styled.div`
@@ -101,12 +102,13 @@ const Card = styled(Existing)<{ url?: string; isMobile?: boolean }>`
   min-width: 325px;
   display: block;
 `;
-const FeedCard: React.FC<Props> = ({ item }) => {
+const FeedCard: React.FC<Props> = ({ item, animalGroup }) => {
   const history = useHistory();
   const ypd = {};
   const HomeClick = () => {
     history.push("/account");
   };
+  console.log(item)
   const date = new Date(Number(item.dob) * 1000);
   const StringDate = date.toLocaleDateString("en-US");
 

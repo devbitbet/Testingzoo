@@ -138,13 +138,24 @@ export default function Feed() {
       break;
   }
   const isZoo = filter === "myZoo";
+  const animalGroup = {}
   const animalsFiltered = animals.filter((animal) => {
-    return animal.owner
-      ? isZoo
-        ? animal.owner.toLowerCase() === account.toLowerCase()
-        : animal.owner.toLowerCase() !== account.toLowerCase()
-      : !isZoo;
+    
+    if (animal.owner) {
+      if (isZoo && animal.owner.toLowerCase() === account.toLowerCase()) {
+        console.log(animalGroup)
+        animalGroup[animal.animalId] = animalGroup[animal.animalId] + 1 || 1
+        debugger; // eslint-disable-line no-debugger
+
+          return animalGroup[animal.animalId] === 1 ? true : false
+        } else {
+         return false
+        }
+      } else {
+         return !isZoo
+       } 
   });
+  console.log(animalsFiltered)
 
   return (
     <Container isMobile={isMobile}>
@@ -178,7 +189,7 @@ export default function Feed() {
           {animalsFiltered.map((data) => {
             return data.listed ? (
               <SwiperSlide key={data.tokenId}>
-                <FeedCard item={data} />
+                <FeedCard item={data} animalGroup={animalGroup}/>
               </SwiperSlide>
             ) : (
               <></>
