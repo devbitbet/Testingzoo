@@ -18,7 +18,7 @@
     "dev:build": "yarn workspace @zoolabs/dev build --max-old-space-size=12288",
     "dev:start": "yarn workspace @zoolabs/dev start",
     "dev:test": "yarn workspace @zoolabs/dev test",
-    "build": "yarn workspace @zoolabs/app build --max-old-space-size=12288",
+    "build": "yarn workspace @zoolabs/dev build --max-old-space-size=12288 && cp -rf packages/dev/build packages/app/build",
     "chain": "yarn workspace @zoolabs/contracts chain",
     "fork": "yarn workspace @zoolabs/contracts fork",
     "node": "yarn workspace @zoolabs/contracts chain",
