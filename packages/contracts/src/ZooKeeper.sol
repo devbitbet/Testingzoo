@@ -12,6 +12,8 @@ import { IDrop } from "./interfaces/IDrop.sol";
 import { IMarket } from "./interfaces/IMarket.sol";
 import { IMedia } from "./interfaces/IMedia.sol";
 
+import "./console.sol";
+
 
 contract ZooKeeper is Ownable {
     using SafeMath for uint256;
@@ -74,7 +76,9 @@ contract ZooKeeper is Ownable {
 
     // Issue a new token to owner
     function mint(address owner, IZoo.Token memory token) private returns (IZoo.Token memory) {
+        console.log("mint", owner, token.name);
         token = media.mintToken(owner, token);
+        console.log("after:token", owner, token.name, token.id);
         market.setBidShares(token.id, token.bidShares);
         tokens[token.id] = token;
         emit Mint(owner, token.id);
@@ -83,13 +87,15 @@ contract ZooKeeper is Ownable {
 
     // Burn token owned by owner
     function burn(address owner, uint256 tokenID) private {
+        console.log("burn", owner, tokenID);
         media.burnToken(owner, tokenID);
         delete tokens[tokenID];
-        emit Burn(msg.sender, tokenID);
+        emit Burn(owner, tokenID);
     }
 
     // Accept ZOO and return Egg NFT
     function buyEggs(uint256 dropID, uint256 quantity) public {
+        console.log('buyEggs', dropID, quantity);
         for (uint8 i=0; i<quantity; i++) {
             buyEgg(dropID);
         }
@@ -97,10 +103,14 @@ contract ZooKeeper is Ownable {
 
     // Accept ZOO and return Egg NFT
     function buyEgg(uint256 dropID) public {
+        console.log('buyEgg', dropID);
+
+        // Check egg price
         IDrop drop = IDrop(drops[dropID]);
         require(zoo.balanceOf(msg.sender) >= drop.eggPrice(), "ZK: Not Enough ZOO to purchase Egg");
 
         // Transfer funds
+        console.log('zoo.transferFrom', msg.sender, address(this),drop.eggPrice());
         zoo.transferFrom(msg.sender, address(this), drop.eggPrice());
 
         // Get Egg from this drop
@@ -119,8 +129,10 @@ contract ZooKeeper is Ownable {
 
         // Get random animal or hybrid from Drop
         if (egg.kind == IZoo.Type.BASE_EGG) {
+            console.log("getRandomAnimal", dropID, eggID);
             return IDrop(drops[dropID]).getRandomAnimal(unsafeRandom());
         } else {
+            console.log("getRandomHybrid", dropID, eggID);
             return IDrop(drops[dropID]).getRandomHybrid(unsafeRandom(), egg.parents);
         }
     }
@@ -129,28 +141,27 @@ contract ZooKeeper is Ownable {
     function hatchEgg(uint256 dropID, uint256 eggID) public {
         // Get animal for given Egg
         IZoo.Token memory animal = getAnimal(dropID, eggID);
+        console.log("after getAnimal", animal.name);
 
         // ...it's hatching!
         burn(msg.sender, eggID);
 
         // Mint new token
         animal = mint(msg.sender, animal);
+        // console.log("after mint", animal.name, animal.kind, animal.data.tokenURI);
 
         emit Hatch(msg.sender, animal.id);
     }
 
+    function isBaseAnimal(uint256 tokenID) private returns (bool) {
+        return tokens[tokenID].kind == IZoo.Type.BASE_ANIMAL;
+    }
+
     modifier canBreed(uint256 parentA, uint256 parentB) {
-        require(media.tokenExists(parentA) && media.tokenExists(parentB), "ZK: nonexistent token");
-        require(keccak256(abi.encode(parentA)) != keccak256(abi.encode(parentB)));
-        require(breedReady(parentA), "ZK: Wait for cooldown to finish.");
-        require(breedReady(parentB), "ZK: Wait for cooldown to finish.");
-
-        // Require non hybrids
-        // require(
-        //     (parents.tokenA.kind == Type.BASE_ANIMAL) && (parents.tokenB.kind == Type.BASE_ANIMAL),
-        //     "Hybrid animals cannot breed."
-        // );
-
+        require(media.tokenExists(parentA) && media.tokenExists(parentB), "Non-existent token");
+        require(keccak256(abi.encode(parentA)) != keccak256(abi.encode(parentB)),"Not able to breed with self" );
+        require(breedReady(parentA) && breedReady(parentB), "Wait for cooldown to finish.");
+        require(isBaseAnimal(parentA) && isBaseAnimal(parentB), "Only BASE_ANIMAL can breed.");
         _;
     }
 
