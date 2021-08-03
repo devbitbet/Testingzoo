@@ -50,11 +50,6 @@ contract ZooKeeper is Ownable {
     IMedia public media;
     IERC20 public zoo;
 
-    struct Pair {
-        uint256 tokenA;
-        uint256 tokenB;
-    }
-
     constructor(address _market, address _media, address _zoo) {
         market = IMarket(_market);
         media = IMedia(_media);
@@ -78,10 +73,10 @@ contract ZooKeeper is Ownable {
     function mint(address owner, IZoo.Token memory token) private returns (IZoo.Token memory) {
         console.log("mint", owner, token.name);
         token = media.mintToken(owner, token);
-        console.log("after:token", owner, token.name, token.id);
         market.setBidShares(token.id, token.bidShares);
         tokens[token.id] = token;
         emit Mint(owner, token.id);
+        console.log("mint", owner, token.name, token.id);
         return token;
     }
 
@@ -118,55 +113,37 @@ contract ZooKeeper is Ownable {
 
         // Mint Egg Token
         egg = mint(msg.sender, egg);
+        console.log('minted', egg.id);
 
-        // Broadcast success
         emit BuyEgg(msg.sender, egg.id);
-    }
-
-    function getAnimal(uint256 dropID, uint256 eggID) private view returns (IZoo.Token memory) {
-        // Get Egg
-        IZoo.Token memory egg = tokens[eggID];
-
-        // Get random animal or hybrid from Drop
-        if (egg.kind == IZoo.Type.BASE_EGG) {
-            console.log("getRandomAnimal", dropID, eggID);
-            return IDrop(drops[dropID]).getRandomAnimal(unsafeRandom());
-        } else {
-            console.log("getRandomHybrid", dropID, eggID);
-            return IDrop(drops[dropID]).getRandomHybrid(unsafeRandom(), egg.parents);
-        }
     }
 
     // Burn egg and randomly return an animal NFT
     function hatchEgg(uint256 dropID, uint256 eggID) public {
+        console.log("hatchEgg", dropID, eggID);
+
+        require(media.tokenExists(eggID), "Egg is burned or does not exist");
+
         // Get animal for given Egg
         IZoo.Token memory animal = getAnimal(dropID, eggID);
-        console.log("after getAnimal", animal.name);
+        console.log("animal", animal.name);
 
         // ...it's hatching!
-        burn(msg.sender, eggID);
-
-        // Mint new token
         animal = mint(msg.sender, animal);
-        // console.log("after mint", animal.name, animal.kind, animal.data.tokenURI);
+        console.log('minted', animal.id, eggID);
+
+        // bye egg
+        burn(msg.sender, eggID);
+        console.log('burned', eggID);
 
         emit Hatch(msg.sender, animal.id);
     }
 
-    function isBaseAnimal(uint256 tokenID) private returns (bool) {
-        return tokens[tokenID].kind == IZoo.Type.BASE_ANIMAL;
-    }
-
-    modifier canBreed(uint256 parentA, uint256 parentB) {
-        require(media.tokenExists(parentA) && media.tokenExists(parentB), "Non-existent token");
-        require(keccak256(abi.encode(parentA)) != keccak256(abi.encode(parentB)),"Not able to breed with self" );
-        require(breedReady(parentA) && breedReady(parentB), "Wait for cooldown to finish.");
-        require(isBaseAnimal(parentA) && isBaseAnimal(parentB), "Only BASE_ANIMAL can breed.");
-        _;
-    }
 
     // Breed two animals and create a hybrid egg
     function breedAnimals(uint256 dropID, uint256 tokenA, uint256 tokenB) public canBreed(tokenA, tokenB) returns (uint256) {
+        console.log('breedAnimals', dropID, tokenA, tokenB);
+
         IZoo.Token memory egg = IDrop(drops[dropID]).newHybridEgg(
             IZoo.Parents({
                 animalA: tokens[tokenA].name,
@@ -186,6 +163,8 @@ contract ZooKeeper is Ownable {
 
     // Freeing an animal burns the animal NFT and returns the ZOO to the owner
     function freeAnimal(uint256 tokenID) public returns (uint256 yield) {
+        console.log('freeAnimal', tokenID);
+
         IZoo.Token memory token = tokens[tokenID];
 
         // Burn the token
@@ -195,11 +174,17 @@ contract ZooKeeper is Ownable {
         uint256 blockAge = block.number - token.birthday;
         uint256 daysOld = blockAge.div(28800);
 
+        console.log('blockAge', blockAge, 'daysOld', daysOld);
+
         // Calculate yield
         yield = daysOld.mul(token.rarity.yield);
 
+        console.log('yield', yield);
+
         // Transfer yield
+        console.log('transfer', msg.sender, yield);
         zoo.transfer(msg.sender, yield);
+
         emit Free(msg.sender, tokenID, yield);
     }
 
@@ -230,6 +215,41 @@ contract ZooKeeper is Ownable {
             )
         ) % 1000;
         return randomNumber;
+    }
+
+    // Ensure base animal
+    function isBaseAnimal(uint256 tokenID) private view returns (bool) {
+        return tokens[tokenID].kind == IZoo.Type.BASE_ANIMAL;
+    }
+
+    // Ensure animals can breed
+    modifier canBreed(uint256 parentA, uint256 parentB) {
+        console.log("canBreed", parentA, parentB);
+
+        require(media.tokenExists(parentA) && media.tokenExists(parentB), "Non-existent token");
+        require(keccak256(abi.encode(parentA)) != keccak256(abi.encode(parentB)),"Not able to breed with self" );
+        require(breedReady(parentA) && breedReady(parentB), "Wait for cooldown to finish.");
+        require(isBaseAnimal(parentA) && isBaseAnimal(parentB), "Only BASE_ANIMAL can breed.");
+        _;
+    }
+
+    // Get a random base or hybrid animal based on a given egg
+    function getAnimal(uint256 dropID, uint256 eggID) private view returns (IZoo.Token memory) {
+        console.log('getAnimal', dropID, eggID);
+
+        // Get Egg
+        IZoo.Token memory egg = tokens[eggID];
+
+        console.log("egg", uint256(egg.kind));
+
+        // Get random animal or hybrid from Drop
+        if (egg.kind == IZoo.Type.BASE_EGG) {
+            console.log("getRandomAnimal", dropID, eggID);
+            return IDrop(drops[dropID]).getRandomAnimal(unsafeRandom());
+        } else {
+            console.log("getRandomHybrid", dropID, eggID);
+            return IDrop(drops[dropID]).getRandomHybrid(unsafeRandom(), egg.parents);
+        }
     }
 
     // Update breed delays

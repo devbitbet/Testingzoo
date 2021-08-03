@@ -6,16 +6,16 @@ pragma experimental ABIEncoderV2;
 
 import "./ERC721Burnable.sol";
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Decimal} from "./Decimal.sol";
-import {IMarket} from "./interfaces/IMarket.sol";
-import "./interfaces/IMedia.sol";
-import "./interfaces/IZoo.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { Counters } from "@openzeppelin/contracts/utils/Counters.sol";
+import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Decimal } from "./Decimal.sol";
+import { IMarket } from "./interfaces/IMarket.sol";
+import { IMedia } from "./interfaces/IMedia.sol";
+import { IZoo } from "./interfaces/IZoo.sol";
 
 import "./console.sol";
 
@@ -63,7 +63,7 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     // Mapping from contentHash to bool
     mapping(bytes32 => bool) private _contentHashes;
 
-    //keccak256("Permit(address spender,uint256 tokenId,uint256 nonce,uint256 deadline)");
+    //keccak256("Permit(address spender,uint256 tokenID,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH =
         0x49ecf333e5b8c95c40fdafc95c1ad136e8914a8fb55e9dc8bb01eaa83a2df9ad;
 
@@ -87,7 +87,7 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      */
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x4e222e66;
 
-    Counters.Counter private _tokenIdTracker;
+    Counters.Counter private _tokenIDTracker;
 
     /* *********
      * Modifiers
@@ -111,17 +111,17 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      * @notice Require that the token has not been burned and has been minted
      */
 
-    modifier onlyExistingToken(uint256 tokenId) {
-        require(tokenExists(tokenId), "ZooMedia: nonexistent token");
+    modifier onlyExistingToken(uint256 tokenID) {
+        require(tokenExists(tokenID), "ZooMedia: nonexistent token");
         _;
     }
 
     /**
      * @notice Require that the token has had a content hash set
      */
-    modifier onlyTokenWithContentHash(uint256 tokenId) {
+    modifier onlyTokenWithContentHash(uint256 tokenID) {
         require(
-            tokenContentHashes[tokenId] != 0,
+            tokenContentHashes[tokenID] != 0,
             "ZooMedia: token does not have hash of created content"
         );
         _;
@@ -130,9 +130,9 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     /**
      * @notice Require that the token has had a metadata hash set
      */
-    modifier onlyTokenWithMetadataHash(uint256 tokenId) {
+    modifier onlyTokenWithMetadataHash(uint256 tokenID) {
         require(
-            tokenMetadataHashes[tokenId] != 0,
+            tokenMetadataHashes[tokenID] != 0,
             "ZooMedia: token does not have hash of its metadata"
         );
         _;
@@ -140,11 +140,11 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
 
     /**
      * @notice Ensure that the provided spender is the approved or the owner of
-     * the media for the specified tokenId
+     * the media for the specified tokenID
      */
-    modifier onlyApprovedOrOwner(address spender, uint256 tokenId) {
+    modifier onlyApprovedOrOwner(address spender, uint256 tokenID) {
         require(
-            _isKeeper(msg.sender) || _isApprovedOrOwner(spender, tokenId),
+            _isKeeper(msg.sender) || _isApprovedOrOwner(spender, tokenID),
             "ZooMedia: Only approved or owner"
         );
         _;
@@ -153,9 +153,9 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     /**
      * @notice Ensure the token has been created (even if it has been burned)
      */
-    modifier onlyTokenCreated(uint256 tokenId) {
+    modifier onlyTokenCreated(uint256 tokenID) {
         require(
-            _tokenIdTracker.current() > tokenId,
+            _tokenIDTracker.current() >= tokenID,
             "ZooMedia: token with that id does not exist"
         );
         _;
@@ -225,26 +225,25 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     /**
      * @notice Helper to check that token has not been burned or minted
      */
-    function tokenExists(uint256 tokenId) public override view returns (bool) {
-        return _exists(tokenId);
+    function tokenExists(uint256 tokenID) public override view returns (bool) {
+        return _exists(tokenID);
     }
 
     /**
-     * @notice return the URI for a particular piece of media with the specified tokenId
+     * @notice return the URI for a particular piece of media with the specified tokenID
      * @dev This function is an override of the base OZ implementation because we
      * will return the tokenURI even if the media has been burned. In addition, this
      * protocol does not support a base URI, so relevant conditionals are removed.
      * @return the URI for a token
      */
-    function tokenURI(uint256 tokenId)
+    function tokenURI(uint256 tokenID)
         public
         view
         override
-        onlyTokenCreated(tokenId)
+        onlyTokenCreated(tokenID)
         returns (string memory)
     {
-        string memory _tokenURI = _tokenURIs[tokenId];
-
+        string memory _tokenURI = _tokenURIs[tokenID];
         return _tokenURI;
     }
 
@@ -252,14 +251,14 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      * @notice Return the metadata URI for a piece of media given the token URI
      * @return the metadata URI for the token
      */
-    function tokenMetadataURI(uint256 tokenId)
+    function tokenMetadataURI(uint256 tokenID)
         external
         view
         override
-        onlyTokenCreated(tokenId)
+        onlyTokenCreated(tokenID)
         returns (string memory)
     {
-        return _tokenMetadataURIs[tokenId];
+        return _tokenMetadataURIs[tokenID];
     }
 
     /* ****************
@@ -278,29 +277,27 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
         _mintForCreator(msg.sender, data, bidShares, "");
     }
 
-
-    function _hashToken(IZoo.Token memory token) private view {
+    function _hashToken(address owner, IZoo.Token memory token) private view returns (IZoo.Token memory) {
+        console.log('_hashToken', token.data.tokenURI, token.data.metadataURI);
         token.data.contentHash = keccak256(
-            abi.encodePacked(token.data.tokenURI, block.number, msg.sender)
+            abi.encodePacked(token.data.tokenURI, block.number, owner)
         );
         token.data.metadataHash = keccak256(
-            abi.encodePacked(token.data.metadataURI, block.number, msg.sender)
+            abi.encodePacked(token.data.metadataURI, block.number, owner)
         );
+        return token;
     }
 
     function mintToken(address owner, IZoo.Token memory token) external override nonReentrant returns (IZoo.Token memory) {
-        _hashToken(token);
+        console.log('mintToken', owner, token.name);
+        token = _hashToken(owner, token);
         _mintForCreator(owner, token.data, token.bidShares, "");
         uint256 id = getRecentToken(owner);
         token.id = id;
         return token;
     }
 
-    function burnToken(address owner, uint256 tokenID)
-        external override
-        nonReentrant
-        onlyExistingToken(tokenID)
-        onlyApprovedOrOwner(owner, tokenID) {
+    function burnToken(address owner, uint256 tokenID) external override nonReentrant onlyExistingToken(tokenID) onlyApprovedOrOwner(owner, tokenID) {
         _burn(tokenID);
     }
 
@@ -350,10 +347,10 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     /**
      * @notice see IMedia
      */
-    function transfer(uint256 tokenId, address recipient) external {
+    function transfer(uint256 tokenID, address recipient) external {
         require(msg.sender == marketAddress, "ZooMedia: only market contract");
-        previousTokenOwners[tokenId] = ownerOf(tokenId);
-        _transfer(ownerOf(tokenId), recipient, tokenId);
+        previousTokenOwners[tokenID] = ownerOf(tokenID);
+        _transfer(ownerOf(tokenID), recipient, tokenID);
     }
 
     /**
@@ -368,95 +365,95 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     /**
      * @notice see IMedia
      */
-    function auctionTransfer(uint256 tokenId, address recipient)
+    function auctionTransfer(uint256 tokenID, address recipient)
         external
         override
     {
         require(msg.sender == marketAddress, "ZooMedia: only market contract");
-        previousTokenOwners[tokenId] = ownerOf(tokenId);
-        _safeTransfer(ownerOf(tokenId), recipient, tokenId, "");
+        previousTokenOwners[tokenID] = ownerOf(tokenID);
+        _safeTransfer(ownerOf(tokenID), recipient, tokenID, "");
     }
 
     /**
      * @notice see IMedia
      */
-    function setAsk(uint256 tokenId, IMarket.Ask memory ask)
+    function setAsk(uint256 tokenID, IMarket.Ask memory ask)
         public
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(msg.sender, tokenID)
     {
-        IMarket(marketAddress).setAsk(tokenId, ask);
+        IMarket(marketAddress).setAsk(tokenID, ask);
     }
 
     /**
      * @notice see IMedia
      */
-    function removeAsk(uint256 tokenId)
+    function removeAsk(uint256 tokenID)
         external
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(msg.sender, tokenID)
     {
-        IMarket(marketAddress).removeAsk(tokenId);
+        IMarket(marketAddress).removeAsk(tokenID);
     }
 
     /**
      * @notice see IMedia
      */
-    function setBid(uint256 tokenId, IMarket.Bid memory bid)
+    function setBid(uint256 tokenID, IMarket.Bid memory bid)
         public
         override
         nonReentrant
-        onlyExistingToken(tokenId)
+        onlyExistingToken(tokenID)
     {
         require(msg.sender == bid.bidder, "Market: Bidder must be msg sender");
-        IMarket(marketAddress).setBid(tokenId, bid, msg.sender);
+        IMarket(marketAddress).setBid(tokenID, bid, msg.sender);
     }
 
     /**
      * @notice see IMedia
      */
-    function removeBid(uint256 tokenId)
+    function removeBid(uint256 tokenID)
         external
         override
         nonReentrant
-        onlyTokenCreated(tokenId)
+        onlyTokenCreated(tokenID)
     {
-        IMarket(marketAddress).removeBid(tokenId, msg.sender);
+        IMarket(marketAddress).removeBid(tokenID, msg.sender);
     }
 
     /**
      * @notice see IMedia
      */
-    function acceptBid(uint256 tokenId, IMarket.Bid memory bid)
+    function acceptBid(uint256 tokenID, IMarket.Bid memory bid)
         public
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(msg.sender, tokenID)
     {
-        IMarket(marketAddress).acceptBid(tokenId, bid);
+        IMarket(marketAddress).acceptBid(tokenID, bid);
     }
 
     /**
      * @notice Burn a token.
      * @dev Only callable if the media owner is also the creator.
      */
-    function burn(uint256 tokenId)
+    function burn(uint256 tokenID)
         public
         override
         nonReentrant
-        onlyExistingToken(tokenId)
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyExistingToken(tokenID)
+        onlyApprovedOrOwner(msg.sender, tokenID)
     {
-        address owner = ownerOf(tokenId);
+        address owner = ownerOf(tokenID);
 
         require(
-            tokenCreators[tokenId] == owner,
+            tokenCreators[tokenID] == owner,
             "ZooMedia: owner is not creator of media"
         );
 
-        _burn(tokenId);
+        _burn(tokenID);
     }
 
     /**
@@ -465,28 +462,28 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      * In instances where a 3rd party is interacting on a user's behalf via `permit`, they should
      * revoke their approval once their task is complete as a best practice.
      */
-    function revokeApproval(uint256 tokenId) external override nonReentrant {
+    function revokeApproval(uint256 tokenID) external override nonReentrant {
         require(
-            msg.sender == getApproved(tokenId),
+            msg.sender == getApproved(tokenID),
             "ZooMedia: caller not approved address"
         );
-        _approve(address(0), tokenId);
+        _approve(address(0), tokenID);
     }
 
     /**
      * @notice see IMedia
      * @dev only callable by approved or owner
      */
-    function updateTokenURI(uint256 tokenId, string calldata _tokenURI)
+    function updateTokenURI(uint256 tokenID, string calldata _tokenURI)
         external
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
-        onlyTokenWithContentHash(tokenId)
+        onlyApprovedOrOwner(msg.sender, tokenID)
+        onlyTokenWithContentHash(tokenID)
         onlyValidURI(_tokenURI)
     {
-        _setTokenURI(tokenId, _tokenURI);
-        emit TokenURIUpdated(tokenId, msg.sender, _tokenURI);
+        _setTokenURI(tokenID, _tokenURI);
+        emit TokenURIUpdated(tokenID, msg.sender, _tokenURI);
     }
 
     /**
@@ -494,18 +491,18 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      * @dev only callable by approved or owner
      */
     function updateTokenMetadataURI(
-        uint256 tokenId,
+        uint256 tokenID,
         string calldata metadataURI
     )
         external
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
-        onlyTokenWithMetadataHash(tokenId)
+        onlyApprovedOrOwner(msg.sender, tokenID)
+        onlyTokenWithMetadataHash(tokenID)
         onlyValidURI(metadataURI)
     {
-        _setTokenMetadataURI(tokenId, metadataURI);
-        emit TokenMetadataURIUpdated(tokenId, msg.sender, metadataURI);
+        _setTokenMetadataURI(tokenID, metadataURI);
+        emit TokenMetadataURIUpdated(tokenID, msg.sender, metadataURI);
     }
 
     /**
@@ -515,9 +512,9 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
      */
     function permit(
         address spender,
-        uint256 tokenId,
+        uint256 tokenID,
         EIP712Signature memory sig
-    ) public override nonReentrant onlyExistingToken(tokenId) {
+    ) public override nonReentrant onlyExistingToken(tokenID) {
         require(
             sig.deadline == 0 || sig.deadline >= block.timestamp,
             "ZooMedia: Permit expired"
@@ -533,8 +530,8 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
                     abi.encode(
                         PERMIT_TYPEHASH,
                         spender,
-                        tokenId,
-                        permitNonces[ownerOf(tokenId)][tokenId]++,
+                        tokenID,
+                        permitNonces[ownerOf(tokenID)][tokenID]++,
                         sig.deadline
                     )
                 )
@@ -545,11 +542,11 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
 
         require(
             recoveredAddress != address(0) &&
-                ownerOf(tokenId) == recoveredAddress,
+                ownerOf(tokenID) == recoveredAddress,
             "ZooMedia: Signature invalid"
         );
 
-        _approve(spender, tokenId);
+        _approve(spender, tokenID);
     }
 
     /* *****************
@@ -578,7 +575,7 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
         IMarket.BidShares memory bidShares,
         bytes memory tokenType
     ) internal onlyValidURI(data.tokenURI) onlyValidURI(data.metadataURI) {
-        console.log("_mintForCreator", bidShares.creator.value);
+        console.log("_mintForCreator", data.tokenURI, data.metadataURI, bidShares.creator.value);
 
         require(
             data.contentHash != 0,
@@ -593,64 +590,68 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
             "ZooMedia: metadata hash must be non-zero"
         );
 
-        uint256 tokenId = _tokenIdTracker.current();
+        // Get a new ID
+        _tokenIDTracker.increment();
+        uint256 tokenID = _tokenIDTracker.current();
 
-        _safeMint(creator, tokenId, tokenType);
-        _tokenIdTracker.increment();
-        _setTokenContentHash(tokenId, data.contentHash);
-        _setTokenMetadataHash(tokenId, data.metadataHash);
-        _setTokenMetadataURI(tokenId, data.metadataURI);
-        _setTokenURI(tokenId, data.tokenURI);
-        _creatorTokens[creator].add(tokenId);
+        console.log("_safeMint", creator, tokenID);
+        _safeMint(creator, tokenID, tokenType);
+        _setTokenContentHash(tokenID, data.contentHash);
+        _setTokenMetadataHash(tokenID, data.metadataHash);
+        _setTokenMetadataURI(tokenID, data.metadataURI);
+        _setTokenURI(tokenID, data.tokenURI);
+        _creatorTokens[creator].add(tokenID);
         _contentHashes[data.contentHash] = true;
 
-        tokenCreators[tokenId] = creator;
-        previousTokenOwners[tokenId] = creator;
+        tokenCreators[tokenID] = creator;
+        previousTokenOwners[tokenID] = creator;
+
+        console.log("_creatorTokens[creator].add(tokenID)", creator, tokenID);
 
         // ZK now responsible for setting bid shares externally
-        // IMarket(marketAddress).setBidShares(tokenId, bidShares);
+        // IMarket(marketAddress).setBidShares(tokenID, bidShares);
     }
 
-    function _setTokenContentHash(uint256 tokenId, bytes32 contentHash)
+    function _setTokenContentHash(uint256 tokenID, bytes32 contentHash)
         internal
         virtual
-        onlyExistingToken(tokenId)
+        onlyExistingToken(tokenID)
     {
-        tokenContentHashes[tokenId] = contentHash;
+        tokenContentHashes[tokenID] = contentHash;
     }
 
-    function _setTokenMetadataHash(uint256 tokenId, bytes32 metadataHash)
+    function _setTokenMetadataHash(uint256 tokenID, bytes32 metadataHash)
         internal
         virtual
-        onlyExistingToken(tokenId)
+        onlyExistingToken(tokenID)
     {
-        tokenMetadataHashes[tokenId] = metadataHash;
+        tokenMetadataHashes[tokenID] = metadataHash;
     }
 
-    function _setTokenMetadataURI(uint256 tokenId, string memory metadataURI)
+    function _setTokenMetadataURI(uint256 tokenID, string memory metadataURI)
         internal
         virtual
-        onlyExistingToken(tokenId)
+        onlyExistingToken(tokenID)
     {
-        _tokenMetadataURIs[tokenId] = metadataURI;
+        _tokenMetadataURIs[tokenID] = metadataURI;
     }
 
     /**
-     * @notice Destroys `tokenId`.
+     * @notice Destroys `tokenID`.
      * @dev We modify the OZ _burn implementation to
      * maintain metadata and to remove the
      * previous token owner from the piece
      */
-    function _burn(uint256 tokenId) internal override {
-        string memory _tokenURI = _tokenURIs[tokenId];
+    function _burn(uint256 tokenID) internal override {
+        // string memory _tokenURI = _tokenURIs[tokenID];
 
-        super._burn(tokenId);
+        super._burn(tokenID);
 
-        if (bytes(_tokenURI).length != 0) {
-            _tokenURIs[tokenId] = _tokenURI;
-        }
+        // if (bytes(_tokenURI).length != 0) {
+        //     _tokenURIs[tokenID] = _tokenURI;
+        // }
 
-        delete previousTokenOwners[tokenId];
+        delete previousTokenOwners[tokenID];
     }
 
     /**
@@ -659,10 +660,10 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
     function _transfer(
         address from,
         address to,
-        uint256 tokenId
+        uint256 tokenID
     ) internal override {
-        IMarket(marketAddress).removeAsk(tokenId);
-        super._transfer(from, to, tokenId);
+        IMarket(marketAddress).removeAsk(tokenID);
+        super._transfer(from, to, tokenID);
     }
 
     /**
@@ -679,7 +680,7 @@ contract ZooMedia is IMedia, ERC721Burnable, ReentrancyGuard {
             keccak256(
                 abi.encode(
                     keccak256(
-                        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                        "EIP712Domain(string name,string version,uint256 chainID,address verifyingContract)"
                     ),
                     keccak256(bytes("CryptoZoo")),
                     keccak256(bytes("1")),
