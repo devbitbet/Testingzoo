@@ -156,7 +156,6 @@ const MyZooAccount: React.FC = () => {
                         lastBred: "",
                       };
                       setHatched(newAnimal);
-                     
                     //  dispatch(burnEgg(egg));
                      dispatch(addAnimal(newAnimal));
                      startAnimationTimer();
