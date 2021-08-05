@@ -1,15 +1,7 @@
 import { deployments, ethers, getNamedAccounts, } from 'hardhat';
 
-// import { ZooKeeper__factory, ZooMedia__factory, ZooMarket__factory, Token, ZooDrop } from '../types';
-
-
-// import { ZooMedia } from '../types/ZooMedia';
-// import { ZooToken } from '../types/ZooToken';
-// import { ZooFaucet } from '../types/ZooFaucet';
-// import { ZooMarket } from '../types/ZooMarket';
-// import { ZooKeeper } from '../types/ZooKeeper';
 import chai, { expect } from "chai";
-// import configureGame from '../utils/configureGame';
+
 import { BigNumber, Bytes, BytesLike, utils } from 'ethers';
 
 import { solidity } from "ethereum-waffle";
@@ -205,73 +197,21 @@ describe("ZooKeeper", () => {
 
     it.only("Should configure a playable game", async () => {
 
-        // Increase allowance so we can buy 100 eggs for testing
-        //  const eggPrice = await zooDrop.methods.eggPrice().call();
-        //  const tsx = zooToken.methods
-        //     .approve(keeperAdd, eggPrice*100)
-        //     .send({ from: account })
-
         const approve = await zooToken.approve(zooKeeper.address, parseInt(eggPrice) * 100);
 
-
-        // // Buy initial two eggs
-        // await zooKeeper.methods.buyEgg(1).send({ from: account }).then((res) => {
-        //     console.log('buyEgg', res)
-        //  })
-
-        // await zooKeeper.methods.buyEgg(1).send({ from: account }).then((res) => {
-        //     console.log('buyEgg', res)
-        //  })
-
         await zooKeeper.buyEgg(1);
 
         await zooKeeper.buyEgg(1);
-
-        // // Hatch eggs into animals
-        // await zooKeeper.methods.hatchEgg(1, 1).send({ from: account }).then((res) => {
-        //   console.log('hatchEgg', res);
-        // })
-
-        // await zooKeeper.methods.hatchEgg(1, 2).send({ from: account }).then((res) => {
-        //   console.log('hatchEgg', res);
-        // })
 
         await zooKeeper.hatchEgg(1, 1);
 
         await zooKeeper.hatchEgg(1, 2)
 
-
-        // Breed animals into hybrid egg
-        // await zooKeeper.methods.breedAnimals(1, 3, 4).send({ from: account }).then((res) => {
-        //   console.log('breedAnimals', res)
-        // })
-
         await zooKeeper.breedAnimals(1, 3, 4);
-
-        // Hatch hybrid egg into hybrid animal
-        // await zooKeeper.methods.hatchEgg(1, 5).send({ from: account }).then((res) => {
-        //   console.log('hatchEgg', res);
-        // })
 
         await zooKeeper.hatchEgg(1, 5);
 
-        // Free animal and collect yield
-        // await zooKeeper.methods.freeAnimal(6).send({ from: account }).then((res) => {
-        //     console.log('freeAnimal', res);
-        //  })
-
         await zooKeeper.freeAnimal(6);
-
-        // if (tokenBalance > 1) {
-        //    const tokenID = await zooMedia.methods
-        //       .tokenOfOwnerByIndex(account, 1)
-        //       .call();
-        //    console.log("tokenID", tokenID);
-        //    const tokenURI = await zooMedia.methods.tokenURI(tokenID).call();
-        //    console.log("tokenURI", tokenURI);
-        //    const token = await zooKeeper.methods.tokens(tokenID).call();
-        //    console.log("token", token);
-        // }
 
         // TOTAL EGGS AFTER THIS TEST = 2
     })
@@ -340,7 +280,7 @@ describe("ZooKeeper", () => {
         // expect(await zooKeeper.types(parseInt(token_id._hex))).to.equal(parseInt(token_id._hex));
 
         // // check eggs mapping for new egg
-        // let egg = await zooKeeper.eggs(parseInt(token_id._hex));
+        // let egg = await zooDrop.eggs(token_id);
 
         // console.log(egg.eggCreationTime)
 
@@ -352,7 +292,7 @@ describe("ZooKeeper", () => {
 
     it.only("Should buy multiple basic eggs", async () => {
 
-        const preEggSupply = await zooDrop.eggSupply()
+        const preTotalSupply = await zooDrop.totalSupply();
 
         for (var i = 0; i < 3; i++) {
 
@@ -360,13 +300,9 @@ describe("ZooKeeper", () => {
 
         }
 
-        const totalSupply = await zooDrop.totalSupply();
+        const postTotalSupply = await zooDrop.totalSupply();
 
-        const postEggSupply = await zooDrop.eggSupply()
-
-        // expect(parseInt(postEggSupply)).to.be.equal(parseInt(preEggSupply) - parseInt(totalSupply))
-
-        // TOTAL EGGS AFTER THIS TEST = 6
+        expect(postTotalSupply.toNumber()).to.be.equal(preTotalSupply.toNumber() + 3);
     });
 
     it("Should revert when totalSupply of eggs are reaching", async () => {
