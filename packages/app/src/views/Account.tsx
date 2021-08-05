@@ -13,6 +13,11 @@ import Body from "components/layout/Body";
 import { useModal } from "components/Modal";
 import BuyEggs from "components/BuyEggs";
 import MyZooAccount from "views/MyZooAccount";
+import { Egg } from "entities/zooentities";
+import { addEgg } from "state/zoo";
+import { useDispatch } from "react-redux";
+import { breedTimeouts, eggTimeout } from "constants/constants";
+import { getMilliseconds, getDaysHours } from "util/timeHelpers";
 import {
    getZooToken,
    getZooDrop,
@@ -83,6 +88,7 @@ const Account: React.FC = () => {
    const { toastSuccess, toastError, toastInfo, clear } = useToast();
    const history = useHistory();
    const [onBuyEggs] = useModal(<BuyEggs />);
+   const dispatch = useDispatch();
    const allEggs = useSelector<AppState, AppState["zoo"]["eggs"]>(
       (state) => state.zoo.eggs
    );
@@ -110,20 +116,6 @@ const Account: React.FC = () => {
 
    const getBalance = async () => {
       try {
-         const tokenBalance = await zooMedia.methods.balanceOf(account).call();
-         console.log("tokenBalance", tokenBalance);
-
-         if (tokenBalance > 1) {
-            const tokenID = await zooMedia.methods
-               .tokenOfOwnerByIndex(account, 1)
-               .call();
-            console.log("tokenID", tokenID);
-            const tokenURI = await zooMedia.methods.tokenURI(tokenID).call();
-            console.log("tokenURI", tokenURI);
-            const token = await zooKeeper.methods.tokens(tokenID).call();
-            console.log("token", token);
-         }
-
          const decimals = await zooToken.methods.decimals().call();
          const rawBalance = await zooToken.methods.balanceOf(account).call();
          const divisor = parseFloat(Math.pow(10, decimals).toString());
@@ -161,12 +153,13 @@ const Account: React.FC = () => {
       setDisable(true);
       toastInfo('Processing approval...');
 
+      const gasPrice = BigInt(await web3.eth.getGasPrice()) * BigInt(1.3);
 
       // Increase allowance
        const eggPrice = await zooDrop.methods.eggPrice().call();
        const tsx = zooToken.methods
           .approve(keeperAdd, eggPrice*100)
-          .send({ from: account })
+          .send({ gasPrice: gasPrice, from: account })
 
       tsx.then(() => {
          setAllowance(true);
@@ -247,6 +240,9 @@ const Account: React.FC = () => {
    const handleFunds = () => {
       console.log(chainId);
       switch (chainId) {
+         case 31337:
+            handleFaucet();
+            break;
          case 97:
             handleFaucet();
             break;
@@ -260,13 +256,33 @@ const Account: React.FC = () => {
    };
 
    const buyEgg = async () => {
-      setDisable(true);
+      setDisable(true);``
       toastClear();
       toastInfo('Processing transaction...');
 
       const drop = await zooKeeper.methods.drops(0).call();
       console.log("Drop:", drop);
-
+      const token = await zooKeeper.methods.buyEgg(1).call({ from: account })
+      console.log(token)
+      const createdDate = new Date().getTime();
+      const now = new Date().getTime();
+      const hatchTimeout = getMilliseconds(eggTimeout);
+      const elapsedTime = now - createdDate;
+      const timeRemaining = hatchTimeout - elapsedTime;
+      const timeRemainingDaysHours = getDaysHours(timeRemaining);
+      const barwidth = [100 * (elapsedTime / hatchTimeout), "%"].join("");
+      const egg: Egg = {
+         owner: account,
+         tokenId: token[2],
+         animalId: "3123",
+         parent1: "123",
+         parent2: "1231",
+         basic: true,
+         created: String(new Date().getTime()),
+         timeRemaining: 15000,
+         CTAOverride: { barwidth, timeRemainingDaysHours },
+       };
+       dispatch(addEgg(egg));
       try {
         await zooKeeper.methods
             .buyEgg(1)
