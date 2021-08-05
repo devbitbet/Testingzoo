@@ -127,11 +127,11 @@ const App: React.FC = () => {
    const moralisId =
       chainId === 97
          ? "16weSJXK4RD3aYAuwiP46Cgzjm4Bng1Torxz5qiy"
-         : "cIGUkzL7pyhM8aC8gIcDiH46QGpsEutO5SAQzTgy";
+         : "16weSJXK4RD3aYAuwiP46Cgzjm4Bng1Torxz5qiy";
    const moralisUrl =
       chainId === 97
          ? "https://dblpeaqbqk32.usemoralis.com:2053/server"
-         : "https://j0ixlvmwc1kz.usemoralis.com:2053/server";
+         : "https://dblpeaqbqk32.usemoralis.com:2053/server";
 
    const getEggs = async () => {
       console.log("GETTING EGGS");
@@ -193,11 +193,7 @@ const App: React.FC = () => {
                currentBid: animal.get("CurrentBid"),
                imageUrl: animal.get("TokenURI"),
                listed: animal.get("Listed"),
-               bloodline: animal.get("Bloodline")
-                  ? animal.get("Bloodline")
-                  : animal.get("AnimalTypeID") === "1"
-                  ? "pure"
-                  : "hybrid",
+               bloodline: animal.get("AnimalTypeID") === "1" ? "pure" : "hybrid",
                selected: false,
                bred: false,
                breedCount: animal.get("BreedCount"),
@@ -304,7 +300,7 @@ const App: React.FC = () => {
    };
 
    return (
-      <MoralisProvider appId={moralisId} serverUrl={moralisUrl}>
+      // <MoralisProvider appId={moralisId} serverUrl={moralisUrl}>
          <Suspense fallback={null}>
             <Router history={history}>
                <ResetCSS />
@@ -362,7 +358,7 @@ const App: React.FC = () => {
                <ToastListener />
             </Router>
          </Suspense>
-      </MoralisProvider>
+      // </MoralisProvider>
    );
 };
 
