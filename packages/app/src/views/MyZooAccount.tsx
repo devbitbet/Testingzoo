@@ -292,7 +292,8 @@ const MyZooAccount: React.FC = () => {
     const animalData = [];
 
     Object.values(allAnimals).forEach((animal, index) => {
-      if (animal.owner.toLowerCase() !== account.toLowerCase()) {
+      if (animal.owner.toLowerCase() !== account.toLowerCase() || animal.freed) {
+        if(animal.freed) console.log("freed", animal)
         return;
       }
       // console.log(animal)

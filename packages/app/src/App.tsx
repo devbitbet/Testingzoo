@@ -202,6 +202,7 @@ const App: React.FC = () => {
                CTAOverride: animal.get("CTAOverride"),
                lastBred: animal.get("lastBred"),
                buyNow: animal.get("BuyNow"),
+               freed: animal.get("Freed") ? true : false
             };
             Animals.push(tempAnimal);
          }
@@ -266,6 +267,7 @@ const App: React.FC = () => {
             timeRemaining: animal.get("TimeRemaining"),
             CTAOverride: animal.get("CTAOverride"),
             lastBred: animal.get("lastBred"),
+            freed: animal.get("Freed")? true : false
          };
          dispatch(addAnimal(tempAnimal));
       } catch (e) {

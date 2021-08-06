@@ -20,6 +20,7 @@ export interface Animal {
    timeRemaining?: number;
    CTAOverride?: any;
    lastBred?: string;
+   freed? : boolean
    
 }
 
