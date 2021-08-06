@@ -295,9 +295,7 @@ contract ZooDrop is Ownable {
             // Choose random animal from choices
             if (rarity.probability > random) {
                 string[] memory choices = rarityAnimals[name];
-                name = choices[random % choices.length];
-                console.log('animal name', name);
-                animal = getAnimal(name);
+                animal = getAnimal(choices[random % choices.length]);
                 break;
             }
         }
